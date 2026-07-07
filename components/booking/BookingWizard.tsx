@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { bookings, services, staffMembers } from "@/lib/data";
-import type { Service, StaffMember } from "@/lib/types";
+import type { Service } from "@/lib/types";
 
 type BookingWizardProps = {
   compact?: boolean;
@@ -39,8 +39,11 @@ function getSlots(service: Service, selectedStaffId: string, selectedDate: strin
   const open = timeToMinutes("09:00");
   const close = timeToMinutes("19:00");
   const slotStep = 30;
-  const staffPool = selectedStaffId === ANY_STAFF ? staffMembers : staffMembers.filter((staff) => staff.id === selectedStaffId);
+  const qualifiedStaff = staffMembers.filter((staff) => staff.services.includes(service.id));
+  const staffPool = selectedStaffId === ANY_STAFF ? qualifiedStaff : qualifiedStaff.filter((staff) => staff.id === selectedStaffId);
   const possibleSlots: string[] = [];
+
+  if (staffPool.length === 0) return possibleSlots;
 
   for (let minutes = open; minutes + service.durationMinutes <= close; minutes += slotStep) {
     const start = minutes;
@@ -78,13 +81,20 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
   const [step, setStep] = useState<Step>("details");
 
   const selectedService = services.find((service) => service.id === serviceId) ?? services[0];
+  const availableStaff = useMemo(() => staffMembers.filter((staff) => staff.services.includes(serviceId)), [serviceId]);
   const availableSlots = useMemo(() => getSlots(selectedService, staffId, date), [selectedService, staffId, date]);
 
   const canConfirm = customerName.trim().length > 1 && customerPhone.trim().length > 6 && Boolean(time);
 
   function handleServiceChange(nextServiceId: string) {
+    const currentStaff = staffMembers.find((staff) => staff.id === staffId);
+
     setServiceId(nextServiceId);
     setTime("");
+
+    if (staffId !== ANY_STAFF && !currentStaff?.services.includes(nextServiceId)) {
+      setStaffId(ANY_STAFF);
+    }
   }
 
   function handleStaffChange(nextStaffId: string) {
@@ -148,7 +158,7 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
           <div>
             <label className="font-black">2. Select stylist</label>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {[{ id: ANY_STAFF, name: "Any available stylist", role: "Fastest available", bio: "", services: [] } as StaffMember, ...staffMembers].map((staff) => (
+              {[{ id: ANY_STAFF, name: "Any available stylist", role: "Fastest available" }, ...availableStaff].map((staff) => (
                 <button key={staff.id} onClick={() => handleStaffChange(staff.id)} className={`rounded-3xl border p-4 text-left transition ${staff.id === staffId ? "border-rosewood bg-blush/70" : "border-rosewood/10 bg-white/70 hover:border-rosewood/40"}`}>
                   <span className="block font-black">{staff.name}</span>
                   <span className="mt-1 block text-sm text-espresso/60">{staff.role}</span>
