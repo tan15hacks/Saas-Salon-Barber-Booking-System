@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { salon, services, staffMembers, bookings as seedBookings } from "@/lib/data";
-import type { Booking } from "@/lib/types";
-import { DEFAULT_WORK_HOURS, OWNER_WORKSPACE_KEY, WORK_HOURS_KEY, getAvailableSlots, isStaffFullyBookedForService, normalizeWorkHours } from "@/lib/bookingAvailability";
+import type { Booking, Service, StaffMember } from "@/lib/types";
+import { DEFAULT_WORK_HOURS, OWNER_WORKSPACE_KEY, WORK_HOURS_KEY, getAvailableSlots, getAvailableSlotsForStaff, isStaffFullyBookedForService, minutesToTime, normalizeWorkHours, timeToMinutes } from "@/lib/bookingAvailability";
 import type { WorkHours } from "@/lib/bookingAvailability";
 
 const ANY_STAFF = "any";
@@ -14,6 +14,11 @@ type BookingFormLiveProps = {
 
 type SavedWorkspaceState = {
   bookings?: Booking[];
+  services?: Service[];
+  staff?: StaffMember[];
+  shopName?: string;
+  shopPhone?: string;
+  shopHours?: string;
   workHours?: WorkHours;
 };
 
@@ -43,11 +48,13 @@ function loadWorkspaceData() {
     const hours = rawHours ? (JSON.parse(rawHours) as WorkHours) : workspace?.workHours;
 
     return {
+      workspace,
       bookings: workspace?.bookings ?? seedBookings,
       workHours: normalizeWorkHours(hours ?? DEFAULT_WORK_HOURS),
     };
   } catch {
     return {
+      workspace: null,
       bookings: seedBookings,
       workHours: DEFAULT_WORK_HOURS,
     };
@@ -66,6 +73,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   const [reference, setReference] = useState(bookingRef());
   const [savedBookings, setSavedBookings] = useState<Booking[]>(seedBookings);
   const [workHours, setWorkHours] = useState<WorkHours>(DEFAULT_WORK_HOURS);
+  const [submittedStaffName, setSubmittedStaffName] = useState("Any available stylist");
 
   useEffect(() => {
     const data = loadWorkspaceData();
@@ -101,6 +109,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     setName("");
     setPhone("");
     setNotes("");
+    setSubmittedStaffName("Any available stylist");
     setReference(bookingRef());
   }
 
@@ -124,6 +133,53 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     setTime("");
   }
 
+  function pickStaffForRequest() {
+    if (staffId !== ANY_STAFF) return staffId;
+
+    const matchingStaff = availableStaff.find((member) => {
+      const slots = getAvailableSlotsForStaff({ staffId: member.id, service, date, bookings: savedBookings, workHours });
+      return slots.includes(time);
+    });
+
+    return matchingStaff?.id ?? availableStaff[0]?.id ?? staffMembers[0].id;
+  }
+
+  function saveBookingRequest() {
+    const assignedStaffId = pickStaffForRequest();
+    const start = timeToMinutes(time);
+    const nextBooking: Booking = {
+      id: `bk-${Date.now()}`,
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
+      serviceId,
+      staffId: assignedStaffId,
+      date,
+      startTime: time,
+      endTime: minutesToTime(start + service.durationMinutes),
+      status: "pending",
+    };
+
+    const data = loadWorkspaceData();
+    const updatedBookings = [nextBooking, ...data.bookings];
+    const nextWorkspace: SavedWorkspaceState = {
+      ...(data.workspace ?? {}),
+      bookings: updatedBookings,
+      services,
+      staff: staffMembers,
+      shopName: data.workspace?.shopName ?? salon.name,
+      shopPhone: data.workspace?.shopPhone ?? salon.phone,
+      shopHours: data.workspace?.shopHours ?? salon.openingHours,
+      workHours: data.workHours,
+    };
+
+    window.localStorage.setItem(OWNER_WORKSPACE_KEY, JSON.stringify(nextWorkspace));
+    window.localStorage.setItem(WORK_HOURS_KEY, JSON.stringify(data.workHours));
+    setSavedBookings(updatedBookings);
+    setSubmittedStaffName(staffMembers.find((member) => member.id === assignedStaffId)?.name ?? selectedStaff);
+    setReference(bookingRef());
+    setSent(true);
+  }
+
   if (sent) {
     return (
       <div className="glass-card rounded-[2rem] p-6 md:p-8">
@@ -139,7 +195,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
         <div className="mt-6 rounded-3xl bg-white/70 p-5 text-sm text-espresso/70">
           <p className="font-black text-espresso">Appointment summary</p>
           <p className="mt-3">{service.name}</p>
-          <p>{selectedStaff}</p>
+          <p>{submittedStaffName}</p>
           <p>{date} · {formatTime(time)}</p>
           <p>₱{service.price.toLocaleString()} · {service.durationMinutes} mins</p>
           {notes ? <p>Note: {notes}</p> : null}
@@ -201,7 +257,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
           {visibleTimes.length === 0 ? <p className="mt-4 rounded-2xl bg-red-100 p-4 text-sm font-bold text-red-700">This staff member is fully booked on this date. Please choose another staff member or another date.</p> : null}
           <div className="mt-6 rounded-3xl bg-cream p-4 text-sm"><p className="font-black">Booking summary</p><p className="mt-2 text-espresso/65">{service.name}</p><p className="text-espresso/65">{selectedStaff}{selectedStaffFull ? " · Fully booked on this date" : ""}</p><p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : " · Choose a time"}</p><p className="text-espresso/65">₱{service.price.toLocaleString()} · {service.durationMinutes} mins</p>{notes ? <p className="mt-2 text-espresso/65">Note: {notes}</p> : null}</div>
           <div className="mt-5 rounded-3xl bg-white/80 p-4 text-xs leading-5 text-espresso/60"><p className="font-black text-espresso">Before you send</p><p className="mt-1">This sends a booking request. The salon will confirm your appointment.</p></div>
-          <button disabled={!canSend} onClick={() => { setReference(bookingRef()); setSent(true); }} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">Send booking request</button>
+          <button disabled={!canSend} onClick={saveBookingRequest} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">Send booking request</button>
         </aside>
       </div>
     </div>
