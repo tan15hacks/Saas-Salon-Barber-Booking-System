@@ -245,12 +245,21 @@ a {
 }
 
 @media (min-width: 1280px) {
+  section:has(> aside.fixed.left-0.top-20) {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+
   main aside.fixed.left-0.top-20 {
-    top: 5.15rem !important;
+    position: fixed !important;
+    top: 5.05rem !important;
+    left: 0 !important;
     bottom: auto !important;
-    height: calc(100vh - 5.65rem) !important;
-    max-height: calc(100vh - 5.65rem) !important;
-    overflow-y: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: contain !important;
   }
 
   main aside.fixed.left-0.top-20 nav {
