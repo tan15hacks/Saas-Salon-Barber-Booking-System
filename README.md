@@ -10,9 +10,15 @@ This repo starts as a polished demo for a salon business, then can grow into a r
 - Service and staff showcase
 - Customer booking wizard
 - Booking summary and fake confirmation state
-- Admin dashboard preview
+- Hidden mock owner admin area
+- Analytics and CSV report demo
+- Mobile sticky booking CTA
 - Demo salon data separated in `lib/data.ts`
 - Clean structure for future Supabase/database integration
+
+## Public demo polish
+
+The public customer view now includes trust badges, service details, stylist cards, gallery placeholders, reviews, how-booking-works, booking policies, location/hours, FAQs, a stronger booking page, and confirmation reference numbers.
 
 ## Tech stack
 
@@ -33,15 +39,15 @@ Open `http://localhost:3000`.
 
 - `/` - Public salon website
 - `/book` - Customer booking flow
-- `/admin` - Admin dashboard preview
+- `/admin` - Hidden owner dashboard preview
 
 ## Suggested next features
 
 1. Connect Supabase for real bookings.
 2. Add owner authentication.
-3. Create CRUD screens for services, staff, and business settings.
-4. Add shop slugs like `/salons/prime-glow-studio`.
-5. Add SMS/email reminders and PayMongo/GCash reservation fees.
+3. Add shop slugs like `/salons/prime-glow-studio`.
+4. Add SMS/email reminders and PayMongo/GCash reservation fees.
+5. Replace gallery placeholders with real salon photos.
 
 ## Business direction
 
