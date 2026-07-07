@@ -33,12 +33,6 @@ export function AdminLoginGate({ children }: AdminLoginGateProps) {
     setError("");
   }
 
-  function handleLogout() {
-    window.localStorage.removeItem(SESSION_KEY);
-    setIsAllowed(false);
-    setPin("");
-  }
-
   if (!mounted) {
     return <section className="py-16"><div className="salon-container rounded-[2rem] bg-white/70 p-8">Loading owner area...</div></section>;
   }
@@ -52,7 +46,7 @@ export function AdminLoginGate({ children }: AdminLoginGateProps) {
             <span className="badge">Private owner portal</span>
             <h1 className="mt-5 text-5xl font-black leading-tight tracking-tight md:text-6xl">Salon owner access</h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-espresso/70">
-              Open /admin directly, enter the owner PIN, and manage bookings, staff, services, reports, and business settings from one workspace.
+              Open /admin directly, enter the owner PIN, and manage bookings, staff, services, reports, reviews, and business settings from one workspace.
             </p>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -80,29 +74,5 @@ export function AdminLoginGate({ children }: AdminLoginGateProps) {
     );
   }
 
-  return (
-    <>
-      {children}
-      <a
-        href="/admin/reviews"
-        className="fixed bottom-6 left-6 z-50 hidden w-[244px] rounded-2xl bg-white px-4 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.18)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95 xl:flex xl:items-center xl:justify-between"
-      >
-        Reviews
-        <span className="text-rosewood/45">↗</span>
-      </a>
-      <a
-        href="/admin/reviews"
-        className="fixed bottom-6 right-6 z-50 rounded-full bg-white px-5 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.16)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95 xl:hidden"
-      >
-        Reviews
-      </a>
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="fixed right-6 top-6 z-50 rounded-full bg-espresso px-5 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(42,23,20,0.24)] transition hover:-translate-y-0.5 hover:bg-rosewood active:scale-95"
-      >
-        Logout owner
-      </button>
-    </>
-  );
+  return <>{children}</>;
 }
