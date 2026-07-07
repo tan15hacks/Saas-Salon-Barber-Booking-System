@@ -8,6 +8,10 @@ type AdminReportsProps = {
 
 type CsvRow = Record<string, string | number>;
 
+const panelClass = "rounded-[2rem] border border-rosewood/10 bg-white/82 p-6 shadow-sm";
+const primaryButton = "rounded-full bg-rosewood px-5 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-espresso active:scale-95";
+const secondaryButton = "rounded-full border border-rosewood/20 bg-white/65 px-5 py-3 text-sm font-black text-rosewood transition hover:-translate-y-0.5 hover:bg-blush active:scale-95";
+
 const statusLabels: Record<BookingStatus, string> = {
   pending: "Pending",
   confirmed: "Confirmed",
@@ -36,6 +40,7 @@ export function AdminReports({ bookings, services, staff }: AdminReportsProps) {
   const validBookings = bookings.filter((booking) => booking.status !== "cancelled" && booking.status !== "no_show");
   const estimatedRevenue = validBookings.reduce((sum, booking) => sum + getPrice(booking.serviceId), 0);
   const completed = bookings.filter((booking) => booking.status === "completed").length;
+  const pending = bookings.filter((booking) => booking.status === "pending").length;
   const noShows = bookings.filter((booking) => booking.status === "no_show").length;
   const completionRate = bookings.length ? Math.round((completed / bookings.length) * 100) : 0;
   const noShowRate = bookings.length ? Math.round((noShows / bookings.length) * 100) : 0;
@@ -77,6 +82,7 @@ export function AdminReports({ bookings, services, staff }: AdminReportsProps) {
 
   const summaryRows = [
     { metric: "Total bookings", value: bookings.length },
+    { metric: "Pending bookings", value: pending },
     { metric: "Valid revenue bookings", value: validBookings.length },
     { metric: "Estimated revenue", value: estimatedRevenue },
     { metric: "Average ticket", value: averageTicket },
@@ -86,42 +92,52 @@ export function AdminReports({ bookings, services, staff }: AdminReportsProps) {
     { metric: "Top staff", value: staffRevenue[0]?.member.name ?? "None" },
   ];
 
+  const summaryCards = [
+    { label: "Revenue", value: `₱${estimatedRevenue.toLocaleString()}`, helper: "Confirmed + pending + completed" },
+    { label: "Average ticket", value: `₱${averageTicket.toLocaleString()}`, helper: "Revenue per valid booking" },
+    { label: "Completion", value: `${completionRate}%`, helper: `${completed} completed bookings` },
+    { label: "No-show", value: `${noShowRate}%`, helper: `${noShows} missed bookings` },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="space-y-8">
+      <div className={panelClass}>
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <h3 className="text-2xl font-black">Analytics & report exports</h3>
-            <p className="mt-2 text-sm text-espresso/60">Download CSV reports and preview business performance without a database.</p>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Business intelligence</p>
+            <h3 className="mt-2 text-3xl font-black">Analytics & report exports</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-espresso/60">Preview performance, identify top services, track staff revenue, and download CSV files for demos or client discussions.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <a href={csvHref(summaryRows)} download="prime-glow-summary.csv" className="rounded-full bg-rosewood px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-espresso">Export summary</a>
-            <a href={csvHref(bookingRows)} download="prime-glow-bookings.csv" className="rounded-full border border-rosewood/20 px-5 py-3 text-sm font-black text-rosewood transition hover:-translate-y-0.5 hover:bg-rosewood hover:text-white">Export bookings</a>
+            <a href={csvHref(summaryRows)} download="prime-glow-summary.csv" className={primaryButton}>Export summary</a>
+            <a href={csvHref(bookingRows)} download="prime-glow-bookings.csv" className={secondaryButton}>Export bookings</a>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        {[
-          ["Revenue", `₱${estimatedRevenue.toLocaleString()}`],
-          ["Average ticket", `₱${averageTicket.toLocaleString()}`],
-          ["Completion", `${completionRate}%`],
-          ["No-show", `${noShowRate}%`],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-[1.5rem] border border-rosewood/10 bg-white/75 p-5 transition hover:-translate-y-1 hover:shadow-soft">
-            <p className="text-sm font-bold text-espresso/55">{label}</p>
-            <p className="mt-2 text-3xl font-black">{value}</p>
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="rounded-[1.75rem] border border-rosewood/10 bg-white/82 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-soft">
+            <p className="text-sm font-bold text-espresso/55">{card.label}</p>
+            <p className="mt-3 text-4xl font-black tracking-tight">{card.value}</p>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-rosewood/60">{card.helper}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
-          <h3 className="text-2xl font-black">Revenue by service</h3>
-          <div className="mt-6 space-y-4">
+      <div className="grid gap-6 2xl:grid-cols-2">
+        <div className={panelClass}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Service performance</p>
+              <h3 className="mt-2 text-2xl font-black">Revenue by service</h3>
+            </div>
+            <p className="text-sm font-bold text-espresso/55">Top: {serviceRevenue[0]?.service.name ?? "None"}</p>
+          </div>
+          <div className="mt-6 space-y-5">
             {serviceRevenue.map((item) => (
               <div key={item.service.id}>
-                <div className="mb-2 flex justify-between gap-4 text-sm">
+                <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <b>{item.service.name}</b>
                   <b className="text-rosewood">₱{item.revenue.toLocaleString()} · {item.bookings} bookings</b>
                 </div>
@@ -133,12 +149,18 @@ export function AdminReports({ bookings, services, staff }: AdminReportsProps) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
-          <h3 className="text-2xl font-black">Revenue by staff</h3>
-          <div className="mt-6 space-y-4">
+        <div className={panelClass}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Team performance</p>
+              <h3 className="mt-2 text-2xl font-black">Revenue by staff</h3>
+            </div>
+            <p className="text-sm font-bold text-espresso/55">Top: {staffRevenue[0]?.member.name ?? "None"}</p>
+          </div>
+          <div className="mt-6 space-y-5">
             {staffRevenue.map((item) => (
               <div key={item.member.id}>
-                <div className="mb-2 flex justify-between gap-4 text-sm">
+                <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <b>{item.member.name}</b>
                   <b className="text-rosewood">₱{item.revenue.toLocaleString()} · {item.bookings} bookings</b>
                 </div>
