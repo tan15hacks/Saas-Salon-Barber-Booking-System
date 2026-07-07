@@ -83,13 +83,21 @@ export function AdminLoginGate({ children }: AdminLoginGateProps) {
   return (
     <>
       {children}
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="fixed right-6 top-6 z-50 rounded-full bg-espresso px-5 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(42,23,20,0.24)] transition hover:-translate-y-0.5 hover:bg-rosewood active:scale-95"
-      >
-        Logout owner
-      </button>
+      <div className="fixed right-6 top-6 z-50 flex flex-wrap justify-end gap-2">
+        <a
+          href="/admin/reviews"
+          className="rounded-full bg-white px-5 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.16)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95"
+        >
+          Reviews
+        </a>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="rounded-full bg-espresso px-5 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(42,23,20,0.24)] transition hover:-translate-y-0.5 hover:bg-rosewood active:scale-95"
+        >
+          Logout owner
+        </button>
+      </div>
     </>
   );
 }
