@@ -5,7 +5,6 @@ const navItems = [
   { href: "/#services", label: "Services" },
   { href: "/#staff", label: "Stylists" },
   { href: "/book", label: "Book" },
-  { href: "/admin", label: "Admin" },
 ];
 
 export function Navbar() {
