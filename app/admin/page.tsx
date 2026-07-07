@@ -1,4 +1,4 @@
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { AdminWorkspaceFixed } from "@/components/admin/AdminWorkspaceFixed";
 import { AdminLoginGate } from "@/components/admin/AdminLoginGate";
 import { Footer } from "@/components/site/Footer";
 import { Navbar } from "@/components/site/Navbar";
@@ -8,7 +8,7 @@ export default function AdminPage() {
     <main className="min-h-screen bg-cream text-espresso">
       <Navbar />
       <AdminLoginGate>
-        <AdminDashboard />
+        <AdminWorkspaceFixed />
       </AdminLoginGate>
       <Footer />
     </main>
