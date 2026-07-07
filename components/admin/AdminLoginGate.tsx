@@ -83,21 +83,26 @@ export function AdminLoginGate({ children }: AdminLoginGateProps) {
   return (
     <>
       {children}
-      <div className="fixed right-6 top-6 z-50 flex flex-wrap justify-end gap-2">
-        <a
-          href="/admin/reviews"
-          className="rounded-full bg-white px-5 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.16)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95"
-        >
-          Reviews
-        </a>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-full bg-espresso px-5 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(42,23,20,0.24)] transition hover:-translate-y-0.5 hover:bg-rosewood active:scale-95"
-        >
-          Logout owner
-        </button>
-      </div>
+      <a
+        href="/admin/reviews"
+        className="fixed bottom-6 left-6 z-50 hidden w-[244px] rounded-2xl bg-white px-4 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.18)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95 xl:flex xl:items-center xl:justify-between"
+      >
+        Reviews
+        <span className="text-rosewood/45">↗</span>
+      </a>
+      <a
+        href="/admin/reviews"
+        className="fixed bottom-6 right-6 z-50 rounded-full bg-white px-5 py-3 text-sm font-black text-rosewood shadow-[0_18px_45px_rgba(42,23,20,0.16)] transition hover:-translate-y-0.5 hover:bg-blush active:scale-95 xl:hidden"
+      >
+        Reviews
+      </a>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="fixed right-6 top-6 z-50 rounded-full bg-espresso px-5 py-3 text-sm font-black text-white shadow-[0_18px_45px_rgba(42,23,20,0.24)] transition hover:-translate-y-0.5 hover:bg-rosewood active:scale-95"
+      >
+        Logout owner
+      </button>
     </>
   );
 }
