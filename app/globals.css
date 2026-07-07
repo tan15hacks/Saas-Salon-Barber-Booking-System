@@ -259,12 +259,27 @@ a {
     bottom: 0 !important;
     height: 100vh !important;
     max-height: 100vh !important;
-    overflow: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
     overscroll-behavior: contain !important;
+    scrollbar-gutter: stable !important;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
     border-top-right-radius: 2rem !important;
     border-bottom-right-radius: 2rem !important;
+  }
+
+  main aside.fixed.left-0.top-20::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  main aside.fixed.left-0.top-20::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  main aside.fixed.left-0.top-20::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 248, 239, 0.28);
   }
 
   main aside.fixed.left-0.top-20 nav {
