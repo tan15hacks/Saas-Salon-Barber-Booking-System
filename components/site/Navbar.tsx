@@ -27,7 +27,7 @@ export function Navbar() {
             <div className="grid h-11 w-11 place-items-center rounded-full bg-rosewood text-lg font-black text-white shadow-soft transition duration-300 group-hover:rotate-6 group-hover:scale-105">PG</div>
             <div>
               <p className="font-black leading-none">{salon.name}</p>
-              <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-rosewood/65">Booking SaaS Demo</p>
+              <p className="mt-1 text-xs font-bold uppercase tracking-[0.2em] text-rosewood/65">Online Booking</p>
             </div>
           </Link>
           <nav className="hidden items-center gap-2 md:flex">
