@@ -106,7 +106,7 @@ export function AdminReports({ bookings, services, staff }: AdminReportsProps) {
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Business intelligence</p>
             <h3 className="mt-2 text-3xl font-black">Analytics & report exports</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-espresso/60">Preview performance, identify top services, track staff revenue, and download CSV files for demos or client discussions.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-espresso/60">Review performance, identify top services, track staff revenue, and download CSV files for business records.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <a href={csvHref(summaryRows)} download="prime-glow-summary.csv" className={primaryButton}>Export summary</a>
