@@ -48,7 +48,7 @@ export function AdminServicesPanel({ services, setServices }: AdminServicesPanel
     const service: Service = {
       id: `${slugify(cleanName)}-${Date.now()}`,
       name: cleanName,
-      description: description.trim() || "Custom salon service added from the admin demo.",
+      description: description.trim() || "Custom salon service added from the owner panel.",
       category,
       price: Number(price) || 0,
       durationMinutes: Number(duration) || 60,
@@ -77,7 +77,7 @@ export function AdminServicesPanel({ services, setServices }: AdminServicesPanel
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Service menu</p>
             <h3 className="mt-2 text-3xl font-black">Manage salon services</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-espresso/60">Create, hide, show, and review the services customers can book. This demo data saves in your browser.</p>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-espresso/60">Create, hide, show, and review the services customers can book. Changes are saved on this device.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[480px]">
             <div className="rounded-[1.4rem] bg-cream p-4"><p className="text-xs font-black uppercase tracking-wide text-rosewood/60">Active</p><p className="mt-1 text-2xl font-black">{activeServices.length}</p></div>
@@ -92,7 +92,7 @@ export function AdminServicesPanel({ services, setServices }: AdminServicesPanel
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Add service</p>
             <h3 className="mt-2 text-2xl font-black">Create a new bookable service</h3>
-            <p className="mt-2 text-sm text-espresso/60">Add realistic service details for client presentations.</p>
+            <p className="mt-2 text-sm text-espresso/60">Add realistic service details for customer bookings.</p>
           </div>
           <span className="w-fit rounded-full bg-blush/60 px-4 py-2 text-sm font-black text-rosewood">Customer-facing</span>
         </div>
@@ -113,7 +113,7 @@ export function AdminServicesPanel({ services, setServices }: AdminServicesPanel
           <div>
             <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Service library</p>
             <h3 className="mt-2 text-2xl font-black">Services manager</h3>
-            <p className="mt-2 text-sm text-espresso/60">Search, filter, hide, show, or delete services from the demo.</p>
+            <p className="mt-2 text-sm text-espresso/60">Search, filter, hide, show, or delete services.</p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row xl:min-w-[560px]">
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search services..." className="input-field" />
