@@ -15,6 +15,10 @@ const config: Config = {
         espresso: "#2a1714",
         champagne: "#f5e4c8",
       },
+      opacity: {
+        65: "0.65",
+        82: "0.82",
+      },
       boxShadow: {
         soft: "0 24px 80px rgba(122, 56, 72, 0.16)",
       },
