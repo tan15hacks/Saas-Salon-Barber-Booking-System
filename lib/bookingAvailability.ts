@@ -15,7 +15,7 @@ export const DEFAULT_WORK_HOURS: WorkHours = {
   slotStepMinutes: 30,
 };
 
-const BLOCKING_STATUSES: BookingStatus[] = ["confirmed", "completed"];
+const BLOCKING_STATUSES: BookingStatus[] = ["pending", "confirmed", "completed"];
 
 export function timeToMinutes(time: string) {
   const [hour, minute] = time.split(":").map(Number);
