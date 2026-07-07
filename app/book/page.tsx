@@ -1,4 +1,4 @@
-import { BookingWizard } from "@/components/booking/BookingWizard";
+import { BookingWizard } from "@/components/booking/BookingFormLive";
 import { Footer } from "@/components/site/Footer";
 import { MobileStickyCTA } from "@/components/site/MobileStickyCTA";
 import { Navbar } from "@/components/site/Navbar";
