@@ -17,6 +17,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background: var(--background);
   color: var(--foreground);
 }
@@ -26,9 +27,78 @@ body {
   color: #fff8ef;
 }
 
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 24px 80px rgba(122, 56, 72, 0.14);
+  }
+  50% {
+    box-shadow: 0 30px 100px rgba(122, 56, 72, 0.26);
+  }
+}
+
+@keyframes shine {
+  from {
+    transform: translateX(-130%) rotate(12deg);
+  }
+  to {
+    transform: translateX(130%) rotate(12deg);
+  }
+}
+
 .salon-container {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
+}
+
+header {
+  animation: slide-down 520ms ease both;
+}
+
+section {
+  animation: fade-up 650ms ease both;
+}
+
+section:nth-of-type(2) {
+  animation-delay: 80ms;
+}
+
+section:nth-of-type(3) {
+  animation-delay: 140ms;
+}
+
+section:nth-of-type(4) {
+  animation-delay: 200ms;
 }
 
 .glass-card {
@@ -36,6 +106,14 @@ body {
   background: rgba(255, 248, 239, 0.74);
   box-shadow: 0 24px 80px rgba(122, 56, 72, 0.16);
   backdrop-filter: blur(18px);
+  animation: fade-up 720ms ease both;
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(122, 56, 72, 0.22);
+  box-shadow: 0 32px 100px rgba(122, 56, 72, 0.22);
 }
 
 .input-field {
@@ -46,12 +124,13 @@ body {
   padding: 0.85rem 1rem;
   color: #2a1714;
   outline: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .input-field:focus {
   border-color: rgba(122, 56, 72, 0.56);
   box-shadow: 0 0 0 4px rgba(122, 56, 72, 0.1);
+  transform: translateY(-1px);
 }
 
 .badge {
@@ -66,4 +145,73 @@ body {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  animation: fade-up 520ms ease both;
+}
+
+article,
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+article {
+  animation: fade-up 650ms ease both;
+  transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+
+article:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 24px 70px rgba(122, 56, 72, 0.12);
+}
+
+button,
+a {
+  position: relative;
+}
+
+button:not(:disabled):active,
+a:active {
+  transform: scale(0.98);
+}
+
+button:not(:disabled),
+a {
+  transition-duration: 240ms;
+}
+
+.rounded-\[2rem\].bg-rosewood,
+.rounded-\[1\.5rem\].bg-gradient-to-br {
+  position: relative;
+  overflow: hidden;
+}
+
+.rounded-\[2rem\].bg-rosewood::after,
+.rounded-\[1\.5rem\].bg-gradient-to-br::after {
+  content: "";
+  position: absolute;
+  inset: -30% auto -30% -20%;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  animation: shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .glass-card:nth-of-type(odd) {
+    animation-name: fade-up, glow-pulse;
+    animation-duration: 720ms, 5s;
+    animation-timing-function: ease, ease-in-out;
+    animation-iteration-count: 1, infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
