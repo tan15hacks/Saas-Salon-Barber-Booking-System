@@ -249,21 +249,30 @@ a {
     animation: none !important;
     transform: none !important;
     will-change: auto !important;
+    padding-top: 1.5rem !important;
   }
 
   main aside.fixed.left-0.top-20 {
     position: fixed !important;
-    top: 5.05rem !important;
+    top: 0 !important;
     left: 0 !important;
-    bottom: auto !important;
-    height: auto !important;
-    max-height: none !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
     overflow: visible !important;
     overscroll-behavior: contain !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 2rem !important;
+    border-bottom-right-radius: 2rem !important;
   }
 
   main aside.fixed.left-0.top-20 nav {
     overflow: visible !important;
+  }
+
+  main aside.fixed.left-0.top-20 + .salon-container {
+    margin-top: 0 !important;
   }
 }
 
