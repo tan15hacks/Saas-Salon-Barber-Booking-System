@@ -2,6 +2,7 @@ import Link from "next/link";
 import { salon } from "@/lib/data";
 
 const navItems = [
+  { href: "/", label: "Home" },
   { href: "/#services", label: "Services" },
   { href: "/#staff", label: "Stylists" },
   { href: "/book", label: "Book" },
