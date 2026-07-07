@@ -74,6 +74,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   const [savedBookings, setSavedBookings] = useState<Booking[]>(seedBookings);
   const [workHours, setWorkHours] = useState<WorkHours>(DEFAULT_WORK_HOURS);
   const [submittedStaffName, setSubmittedStaffName] = useState("Any available stylist");
+  const [availabilityMessage, setAvailabilityMessage] = useState("");
 
   useEffect(() => {
     const data = loadWorkspaceData();
@@ -101,7 +102,13 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   const selectedStaffFull = staffId !== ANY_STAFF && isStaffFull(staffId);
   const visibleTimes = getAvailableSlots({ service, staffId, date, bookings: savedBookings, staff: staffMembers, workHours });
   const selectedStaff = staffId === ANY_STAFF ? "Any available stylist" : staffMembers.find((member) => member.id === staffId)?.name ?? "Selected stylist";
-  const canSend = name.trim().length > 1 && phone.trim().length > 6 && Boolean(time) && !selectedStaffFull && !allStaffFull;
+  const canSend = name.trim().length > 1 && phone.trim().length > 6 && Boolean(time) && !selectedStaffFull && !allStaffFull && visibleTimes.includes(time);
+
+  useEffect(() => {
+    if (time && !visibleTimes.includes(time)) {
+      setTime("");
+    }
+  }, [time, visibleTimes]);
 
   function reset() {
     setSent(false);
@@ -109,6 +116,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     setName("");
     setPhone("");
     setNotes("");
+    setAvailabilityMessage("");
     setSubmittedStaffName("Any available stylist");
     setReference(bookingRef());
   }
@@ -117,6 +125,7 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     setServiceId(nextServiceId);
     setStaffId(ANY_STAFF);
     setTime("");
+    setAvailabilityMessage("");
   }
 
   function selectStaff(nextStaffId: string) {
@@ -126,18 +135,20 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     }
     setStaffId(nextStaffId);
     setTime("");
+    setAvailabilityMessage("");
   }
 
   function selectDate(nextDate: string) {
     setDate(nextDate);
     setTime("");
+    setAvailabilityMessage("");
   }
 
-  function pickStaffForRequest() {
+  function pickStaffForRequest(bookingsToCheck = savedBookings) {
     if (staffId !== ANY_STAFF) return staffId;
 
     const matchingStaff = availableStaff.find((member) => {
-      const slots = getAvailableSlotsForStaff({ staffId: member.id, service, date, bookings: savedBookings, workHours });
+      const slots = getAvailableSlotsForStaff({ staffId: member.id, service, date, bookings: bookingsToCheck, workHours });
       return slots.includes(time);
     });
 
@@ -145,7 +156,18 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   }
 
   function saveBookingRequest() {
-    const assignedStaffId = pickStaffForRequest();
+    const data = loadWorkspaceData();
+    const assignedStaffId = pickStaffForRequest(data.bookings);
+    const latestSlots = getAvailableSlotsForStaff({ staffId: assignedStaffId, service, date, bookings: data.bookings, workHours: data.workHours });
+
+    if (!latestSlots.includes(time)) {
+      setSavedBookings(data.bookings);
+      setWorkHours(data.workHours);
+      setTime("");
+      setAvailabilityMessage("That time was just taken. Please choose another available time.");
+      return;
+    }
+
     const start = timeToMinutes(time);
     const nextBooking: Booking = {
       id: `bk-${Date.now()}`,
@@ -159,7 +181,6 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
       status: "pending",
     };
 
-    const data = loadWorkspaceData();
     const updatedBookings = [nextBooking, ...data.bookings];
     const nextWorkspace: SavedWorkspaceState = {
       ...(data.workspace ?? {}),
@@ -250,11 +271,23 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
         </div>
         <aside className="rounded-[1.5rem] bg-white/70 p-5">
           <h4 className="text-xl font-black">Available times</h4>
-          <p className="mt-2 text-sm leading-6 text-espresso/60">Times are based on working hours and confirmed bookings for the selected date.</p>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            {visibleTimes.map((slot) => <button key={slot} onClick={() => setTime(slot)} className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${time === slot ? "border-rosewood bg-rosewood text-white" : "border-rosewood/10 bg-cream hover:border-rosewood/40"}`}>{formatTime(slot)}</button>)}
-          </div>
+          <p className="mt-2 text-sm leading-6 text-espresso/60">Times are based on working hours and pending or confirmed bookings for the selected date.</p>
+
+          <label className="mt-5 block font-black">
+            Choose time
+            <select value={time} onChange={(event) => setTime(event.target.value)} disabled={!visibleTimes.length} className="input-field mt-3 font-normal disabled:cursor-not-allowed disabled:opacity-50">
+              <option value="">Select an available time</option>
+              {visibleTimes.map((slot) => <option key={slot} value={slot}>{formatTime(slot)}</option>)}
+            </select>
+          </label>
+
+          <p className="mt-3 text-sm font-bold text-espresso/60">
+            {visibleTimes.length ? `${visibleTimes.length} available time${visibleTimes.length === 1 ? "" : "s"} for this date.` : "No available times for this staff and date."}
+          </p>
+
+          {availabilityMessage ? <p className="mt-4 rounded-2xl bg-amber-100 p-4 text-sm font-bold text-amber-800">{availabilityMessage}</p> : null}
           {visibleTimes.length === 0 ? <p className="mt-4 rounded-2xl bg-red-100 p-4 text-sm font-bold text-red-700">This staff member is fully booked on this date. Please choose another staff member or another date.</p> : null}
+
           <div className="mt-6 rounded-3xl bg-cream p-4 text-sm"><p className="font-black">Booking summary</p><p className="mt-2 text-espresso/65">{service.name}</p><p className="text-espresso/65">{selectedStaff}{selectedStaffFull ? " · Fully booked on this date" : ""}</p><p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : " · Choose a time"}</p><p className="text-espresso/65">₱{service.price.toLocaleString()} · {service.durationMinutes} mins</p>{notes ? <p className="mt-2 text-espresso/65">Note: {notes}</p> : null}</div>
           <div className="mt-5 rounded-3xl bg-white/80 p-4 text-xs leading-5 text-espresso/60"><p className="font-black text-espresso">Before you send</p><p className="mt-1">This sends a booking request. The salon will confirm your appointment.</p></div>
           <button disabled={!canSend} onClick={saveBookingRequest} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">Send booking request</button>
