@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { salon, services, staffMembers } from "@/lib/data";
 
 const times = ["09:00", "09:30", "10:00", "10:30", "11:00", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"];
 const ANY_STAFF = "any";
+const STAFF_AVAILABILITY_KEY = "prime-glow-staff-availability";
 
 type BookingFormLiveProps = {
   compact?: boolean;
 };
+
+type StaffAvailability = Record<string, boolean>;
 
 function formatTime(time: string) {
   const [hourText, minute] = time.split(":");
@@ -28,6 +31,15 @@ function bookingRef() {
   return `PG-${date}-${code}`;
 }
 
+function loadStaffAvailability(): StaffAvailability {
+  try {
+    const raw = window.localStorage.getItem(STAFF_AVAILABILITY_KEY);
+    return raw ? (JSON.parse(raw) as StaffAvailability) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   const [serviceId, setServiceId] = useState(services[0].id);
   const [staffId, setStaffId] = useState(ANY_STAFF);
@@ -38,11 +50,28 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
   const [notes, setNotes] = useState("");
   const [sent, setSent] = useState(false);
   const [reference, setReference] = useState(bookingRef());
+  const [staffAvailability, setStaffAvailability] = useState<StaffAvailability>({});
+
+  useEffect(() => {
+    setStaffAvailability(loadStaffAvailability());
+
+    function syncAvailability() {
+      setStaffAvailability(loadStaffAvailability());
+    }
+
+    window.addEventListener("storage", syncAvailability);
+    return () => window.removeEventListener("storage", syncAvailability);
+  }, []);
 
   const service = services.find((item) => item.id === serviceId) ?? services[0];
   const availableStaff = useMemo(() => staffMembers.filter((member) => member.services.includes(serviceId)), [serviceId]);
+  const isStaffFull = (id: string) => Boolean(staffAvailability[id]);
+  const availableForService = availableStaff.filter((member) => !isStaffFull(member.id));
+  const selectedStaffFull = staffId !== ANY_STAFF && isStaffFull(staffId);
+  const allStaffFull = availableStaff.length > 0 && availableForService.length === 0;
+  const visibleTimes = selectedStaffFull || allStaffFull ? [] : times;
   const selectedStaff = staffId === ANY_STAFF ? "Any available stylist" : staffMembers.find((member) => member.id === staffId)?.name ?? "Selected stylist";
-  const canSend = name.trim().length > 1 && phone.trim().length > 6 && Boolean(time);
+  const canSend = name.trim().length > 1 && phone.trim().length > 6 && Boolean(time) && !selectedStaffFull && !allStaffFull;
 
   function reset() {
     setSent(false);
@@ -51,6 +80,18 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
     setPhone("");
     setNotes("");
     setReference(bookingRef());
+  }
+
+  function selectService(nextServiceId: string) {
+    setServiceId(nextServiceId);
+    setStaffId(ANY_STAFF);
+    setTime("");
+  }
+
+  function selectStaff(nextStaffId: string) {
+    if (nextStaffId !== ANY_STAFF && isStaffFull(nextStaffId)) return;
+    setStaffId(nextStaffId);
+    setTime("");
   }
 
   if (sent) {
@@ -91,21 +132,25 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
         <p className="text-sm font-bold text-espresso/60">Request first · Salon confirms after</p>
       </div>
       <div className="mt-6 grid gap-2 sm:grid-cols-5">
-        {['Service', 'Stylist', 'Schedule', 'Details', 'Confirm'].map((step, index) => <div key={step} className="rounded-2xl bg-white/70 p-3 text-center text-xs font-black uppercase tracking-wide text-espresso/60"><span className="mr-1 text-rosewood">{index + 1}</span>{step}</div>)}
+        {["Service", "Stylist", "Schedule", "Details", "Confirm"].map((step, index) => <div key={step} className="rounded-2xl bg-white/70 p-3 text-center text-xs font-black uppercase tracking-wide text-espresso/60"><span className="mr-1 text-rosewood">{index + 1}</span>{step}</div>)}
       </div>
       <div className={`mt-6 grid gap-6 ${compact ? "" : "lg:grid-cols-[1fr_0.82fr]"}`}>
         <div className="space-y-6">
           <div>
             <label className="font-black">1. Select service</label>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {services.map((item) => <button key={item.id} onClick={() => { setServiceId(item.id); setStaffId(ANY_STAFF); setTime(""); }} className={`rounded-3xl border p-4 text-left transition ${item.id === serviceId ? "border-rosewood bg-rosewood text-white" : "border-rosewood/10 bg-white/70 hover:border-rosewood/40"}`}><span className="block font-black">{item.name}</span><span className="mt-1 block text-sm opacity-75">₱{item.price.toLocaleString()} · {item.durationMinutes} mins</span></button>)}
+              {services.map((item) => <button key={item.id} onClick={() => selectService(item.id)} className={`rounded-3xl border p-4 text-left transition ${item.id === serviceId ? "border-rosewood bg-rosewood text-white" : "border-rosewood/10 bg-white/70 hover:border-rosewood/40"}`}><span className="block font-black">{item.name}</span><span className="mt-1 block text-sm opacity-75">₱{item.price.toLocaleString()} · {item.durationMinutes} mins</span></button>)}
             </div>
           </div>
           <div className="rounded-[1.5rem] bg-white/70 p-5"><p className="font-black">Selected service details</p><p className="mt-2 text-sm leading-6 text-espresso/65">{service.description}</p></div>
           <div>
             <label className="font-black">2. Select stylist</label>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {[{ id: ANY_STAFF, name: "Any available stylist", role: "Fastest available" }, ...availableStaff].map((member) => <button key={member.id} onClick={() => { setStaffId(member.id); setTime(""); }} className={`rounded-3xl border p-4 text-left transition ${member.id === staffId ? "border-rosewood bg-blush/70" : "border-rosewood/10 bg-white/70 hover:border-rosewood/40"}`}><span className="block font-black">{member.name}</span><span className="mt-1 block text-sm text-espresso/60">{member.role}</span></button>)}
+              {[{ id: ANY_STAFF, name: "Any available stylist", role: allStaffFull ? "Fully booked today" : "Fastest available" }, ...availableStaff].map((member) => {
+                const full = member.id !== ANY_STAFF && isStaffFull(member.id);
+                const disabled = member.id === ANY_STAFF ? allStaffFull : full;
+                return <button key={member.id} disabled={disabled} onClick={() => selectStaff(member.id)} className={`rounded-3xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${member.id === staffId ? "border-rosewood bg-blush/70" : "border-rosewood/10 bg-white/70 hover:border-rosewood/40"}`}><span className="block font-black">{member.name}</span><span className="mt-1 block text-sm text-espresso/60">{full || (member.id === ANY_STAFF && allStaffFull) ? "Fully booked today" : member.role}</span></button>;
+              })}
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -120,8 +165,11 @@ export function BookingWizard({ compact = false }: BookingFormLiveProps) {
         <aside className="rounded-[1.5rem] bg-white/70 p-5">
           <h4 className="text-xl font-black">Available times</h4>
           <p className="mt-2 text-sm leading-6 text-espresso/60">Choose a time that works best for your visit.</p>
-          <div className="mt-5 grid grid-cols-2 gap-2">{times.map((slot) => <button key={slot} onClick={() => setTime(slot)} className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${time === slot ? "border-rosewood bg-rosewood text-white" : "border-rosewood/10 bg-cream hover:border-rosewood/40"}`}>{formatTime(slot)}</button>)}</div>
-          <div className="mt-6 rounded-3xl bg-cream p-4 text-sm"><p className="font-black">Booking summary</p><p className="mt-2 text-espresso/65">{service.name}</p><p className="text-espresso/65">{selectedStaff}</p><p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : " · Choose a time"}</p><p className="text-espresso/65">₱{service.price.toLocaleString()} · {service.durationMinutes} mins</p>{notes ? <p className="mt-2 text-espresso/65">Note: {notes}</p> : null}</div>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            {visibleTimes.map((slot) => <button key={slot} onClick={() => setTime(slot)} className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${time === slot ? "border-rosewood bg-rosewood text-white" : "border-rosewood/10 bg-cream hover:border-rosewood/40"}`}>{formatTime(slot)}</button>)}
+          </div>
+          {visibleTimes.length === 0 ? <p className="mt-4 rounded-2xl bg-red-100 p-4 text-sm font-bold text-red-700">Selected stylist is fully booked today. Please choose another available stylist.</p> : null}
+          <div className="mt-6 rounded-3xl bg-cream p-4 text-sm"><p className="font-black">Booking summary</p><p className="mt-2 text-espresso/65">{service.name}</p><p className="text-espresso/65">{selectedStaff}{selectedStaffFull ? " · Fully booked today" : ""}</p><p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : " · Choose a time"}</p><p className="text-espresso/65">₱{service.price.toLocaleString()} · {service.durationMinutes} mins</p>{notes ? <p className="mt-2 text-espresso/65">Note: {notes}</p> : null}</div>
           <div className="mt-5 rounded-3xl bg-white/80 p-4 text-xs leading-5 text-espresso/60"><p className="font-black text-espresso">Before you send</p><p className="mt-1">This sends a booking request. The salon will confirm your appointment.</p></div>
           <button disabled={!canSend} onClick={() => { setReference(bookingRef()); setSent(true); }} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">Send booking request</button>
         </aside>
