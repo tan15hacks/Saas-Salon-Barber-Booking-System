@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { bookings, services, staffMembers } from "@/lib/data";
+import { bookings, salon, services, staffMembers } from "@/lib/data";
 import type { Service } from "@/lib/types";
 
 type BookingWizardProps = {
@@ -11,6 +11,17 @@ type BookingWizardProps = {
 type Step = "details" | "confirmed";
 
 const ANY_STAFF = "any";
+
+const progressSteps = ["Service", "Stylist", "Schedule", "Details", "Confirm"];
+
+const serviceIncludes: Record<string, string[]> = {
+  "haircut-blowdry": ["Consultation", "Haircut", "Blow dry finish"],
+  "hair-color": ["Color consultation", "Single-process color", "Aftercare advice"],
+  "keratin-treatment": ["Hair assessment", "Smoothing treatment", "Shine finish"],
+  "manicure-gel": ["Cuticle care", "Nail shaping", "Gel polish"],
+  "event-makeup": ["Skin prep", "Soft glam makeup", "Touch-up guidance"],
+  "hair-spa": ["Scalp massage", "Treatment mask", "Soft finish"],
+};
 
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
@@ -70,6 +81,12 @@ function findStaffLabel(staffId: string) {
   return staffMembers.find((staff) => staff.id === staffId)?.name ?? "Stylist";
 }
 
+function createBookingReference() {
+  const datePart = new Date().toISOString().slice(2, 10).replaceAll("-", "");
+  const randomPart = Math.floor(1000 + Math.random() * 9000);
+  return `PG-${datePart}-${randomPart}`;
+}
+
 export function BookingWizard({ compact = false }: BookingWizardProps) {
   const [serviceId, setServiceId] = useState(services[0].id);
   const [staffId, setStaffId] = useState(ANY_STAFF);
@@ -79,10 +96,12 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [step, setStep] = useState<Step>("details");
+  const [bookingReference, setBookingReference] = useState(createBookingReference);
 
   const selectedService = services.find((service) => service.id === serviceId) ?? services[0];
   const availableStaff = useMemo(() => staffMembers.filter((staff) => staff.services.includes(serviceId)), [serviceId]);
   const availableSlots = useMemo(() => getSlots(selectedService, staffId, date), [selectedService, staffId, date]);
+  const selectedIncludes = serviceIncludes[selectedService.id] ?? ["Consultation", "Service", "Finish"];
 
   const canConfirm = customerName.trim().length > 1 && customerPhone.trim().length > 6 && Boolean(time);
 
@@ -107,26 +126,63 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
     setTime("");
   }
 
+  function submitBooking() {
+    setBookingReference(createBookingReference());
+    setStep("confirmed");
+  }
+
+  function resetBooking() {
+    setStep("details");
+    setTime("");
+    setCustomerName("");
+    setCustomerPhone("");
+    setNotes("");
+    setBookingReference(createBookingReference());
+  }
+
   if (step === "confirmed") {
     return (
       <div className="glass-card rounded-[2rem] p-6 md:p-8">
         <div className="grid h-16 w-16 place-items-center rounded-full bg-rosewood text-2xl font-black text-white">✓</div>
-        <h3 className="mt-6 text-3xl font-black">Booking request sent</h3>
+        <p className="mt-6 text-sm font-black uppercase tracking-[0.28em] text-rosewood/70">Booking request sent</p>
+        <h3 className="mt-3 text-3xl font-black">We received your appointment request</h3>
         <p className="mt-3 leading-7 text-espresso/70">
-          Thanks, {customerName}. Your {selectedService.name} appointment for {date} at {formatTime(time)} has been received. The salon owner can confirm it from the admin dashboard once database integration is added.
+          Thanks, {customerName}. Your {selectedService.name} request for {date} at {formatTime(time)} has been received. The salon will confirm by call, SMS, or message.
         </p>
+
+        <div className="mt-6 rounded-3xl bg-rosewood p-5 text-white">
+          <p className="text-sm font-bold uppercase tracking-[0.24em] text-champagne">Booking reference</p>
+          <p className="mt-2 text-3xl font-black">{bookingReference}</p>
+          <p className="mt-2 text-sm text-white/70">Save this reference when contacting {salon.name}.</p>
+        </div>
+
         <div className="mt-6 rounded-3xl bg-white/70 p-5">
-          <p className="font-black">Summary</p>
+          <p className="font-black">Appointment summary</p>
           <dl className="mt-4 grid gap-3 text-sm text-espresso/70 sm:grid-cols-2">
             <div><dt className="font-bold text-espresso">Service</dt><dd>{selectedService.name}</dd></div>
             <div><dt className="font-bold text-espresso">Stylist</dt><dd>{findStaffLabel(staffId)}</dd></div>
             <div><dt className="font-bold text-espresso">Price</dt><dd>₱{selectedService.price.toLocaleString()}</dd></div>
             <div><dt className="font-bold text-espresso">Duration</dt><dd>{selectedService.durationMinutes} mins</dd></div>
+            <div><dt className="font-bold text-espresso">Date</dt><dd>{date}</dd></div>
+            <div><dt className="font-bold text-espresso">Time</dt><dd>{formatTime(time)}</dd></div>
+            <div><dt className="font-bold text-espresso">Contact</dt><dd>{customerPhone}</dd></div>
+            {notes ? <div><dt className="font-bold text-espresso">Notes</dt><dd>{notes}</dd></div> : null}
           </dl>
         </div>
-        <button onClick={() => setStep("details")} className="mt-6 rounded-full bg-rosewood px-6 py-3 font-black text-white transition hover:bg-espresso">
-          Create another booking
-        </button>
+
+        <div className="mt-6 rounded-3xl bg-cream p-5 text-sm leading-6 text-espresso/65">
+          <p className="font-black text-espresso">Reminder</p>
+          <p className="mt-2">Please arrive 10 minutes early. If you need to cancel or reschedule, contact {salon.phone} at least 3 hours before your appointment.</p>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <button onClick={resetBooking} className="rounded-full bg-rosewood px-6 py-3 font-black text-white transition hover:bg-espresso">
+            Create another booking
+          </button>
+          <a href={`tel:${salon.phone.replaceAll(" ", "")}`} className="rounded-full border border-rosewood/20 px-6 py-3 text-center font-black text-rosewood transition hover:bg-white">
+            Call salon
+          </a>
+        </div>
       </div>
     );
   }
@@ -138,7 +194,15 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
           <p className="text-sm font-black uppercase tracking-[0.25em] text-rosewood/70">Appointment</p>
           <h3 className="mt-2 text-3xl font-black">Book your visit</h3>
         </div>
-        <p className="text-sm font-bold text-espresso/60">Demo mode · No database yet</p>
+        <p className="text-sm font-bold text-espresso/60">Request first · Salon confirms after</p>
+      </div>
+
+      <div className="mt-6 grid gap-2 sm:grid-cols-5">
+        {progressSteps.map((progressStep, index) => (
+          <div key={progressStep} className="rounded-2xl bg-white/70 p-3 text-center text-xs font-black uppercase tracking-wide text-espresso/60">
+            <span className="mr-1 text-rosewood">{index + 1}</span>{progressStep}
+          </div>
+        ))}
       </div>
 
       <div className={`mt-6 grid gap-6 ${compact ? "" : "lg:grid-cols-[1fr_0.82fr]"}`}>
@@ -153,6 +217,14 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="rounded-[1.5rem] bg-white/70 p-5">
+            <p className="font-black">Selected service details</p>
+            <p className="mt-2 text-sm leading-6 text-espresso/65">{selectedService.description}</p>
+            <ul className="mt-4 grid gap-2 text-sm text-espresso/65 sm:grid-cols-3">
+              {selectedIncludes.map((item) => <li key={item} className="rounded-2xl bg-cream px-3 py-2 font-bold">✓ {item}</li>)}
+            </ul>
           </div>
 
           <div>
@@ -200,16 +272,23 @@ export function BookingWizard({ compact = false }: BookingWizardProps) {
               </button>
             ))}
           </div>
+          {availableSlots.length === 0 ? <p className="mt-4 rounded-2xl bg-red-100 p-4 text-sm font-bold text-red-700">No available time slots for this date and stylist. Try another option.</p> : null}
 
           <div className="mt-6 rounded-3xl bg-cream p-4 text-sm">
             <p className="font-black">Booking summary</p>
             <p className="mt-2 text-espresso/65">{selectedService.name}</p>
             <p className="text-espresso/65">{findStaffLabel(staffId)}</p>
-            <p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : ""}</p>
+            <p className="text-espresso/65">{date}{time ? ` · ${formatTime(time)}` : " · Choose a time"}</p>
+            <p className="text-espresso/65">₱{selectedService.price.toLocaleString()} · {selectedService.durationMinutes} mins</p>
             {notes ? <p className="mt-2 text-espresso/65">Note: {notes}</p> : null}
           </div>
 
-          <button disabled={!canConfirm} onClick={() => setStep("confirmed")} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">
+          <div className="mt-5 rounded-3xl bg-white/80 p-4 text-xs leading-5 text-espresso/60">
+            <p className="font-black text-espresso">Before you send</p>
+            <p className="mt-1">This sends a booking request. The salon still needs to confirm your appointment.</p>
+          </div>
+
+          <button disabled={!canConfirm} onClick={submitBooking} className="mt-5 w-full rounded-full bg-rosewood px-6 py-4 font-black text-white transition hover:bg-espresso disabled:cursor-not-allowed disabled:bg-rosewood/35">
             Send booking request
           </button>
         </aside>
