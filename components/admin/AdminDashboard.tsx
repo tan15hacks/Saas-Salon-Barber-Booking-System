@@ -8,9 +8,18 @@ import { AdminStaffPanel } from "@/components/admin/AdminStaffPanel";
 import { bookings as seedBookings, salon, services as seedServices, staffMembers as seedStaffMembers } from "@/lib/data";
 import type { Booking, BookingStatus, Service, StaffMember } from "@/lib/types";
 
-const tabs = ["Dashboard", "Bookings", "Calendar", "Services", "Staff", "Customers", "Reports", "Settings"] as const;
-type AdminTab = (typeof tabs)[number];
+const tabs = [
+  { id: "Dashboard", label: "Dashboard", helper: "Overview" },
+  { id: "Bookings", label: "Appointments", helper: "Requests" },
+  { id: "Calendar", label: "Calendar", helper: "Schedule" },
+  { id: "Services", label: "Services", helper: "Menu" },
+  { id: "Staff", label: "Staff", helper: "Team" },
+  { id: "Customers", label: "Customers", helper: "Clients" },
+  { id: "Reports", label: "Reports", helper: "Exports" },
+  { id: "Settings", label: "Settings", helper: "Business" },
+] as const;
 
+type AdminTab = (typeof tabs)[number]["id"];
 type BookingStatusFilter = BookingStatus | "all";
 
 type AdminDemoState = {
@@ -23,8 +32,11 @@ type AdminDemoState = {
 };
 
 const STORAGE_KEY = "prime-glow-admin-demo-state-v1";
-
 const statusFilters: BookingStatusFilter[] = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"];
+
+const primaryButton = "rounded-full bg-rosewood px-5 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-espresso active:scale-95";
+const secondaryButton = "rounded-full border border-rosewood/20 bg-white/65 px-5 py-3 text-sm font-black text-rosewood transition hover:-translate-y-0.5 hover:bg-blush active:scale-95";
+const panelClass = "rounded-[2rem] border border-rosewood/10 bg-white/82 p-6 shadow-sm";
 
 const statusStyles: Record<BookingStatus, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -43,7 +55,7 @@ const statusLabels: Record<BookingStatus, string> = {
 };
 
 function StatusBadge({ status }: { status: BookingStatus }) {
-  return <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusStyles[status]}`}>{statusLabels[status]}</span>;
+  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusStyles[status]}`}>{statusLabels[status]}</span>;
 }
 
 function timeToMinutes(time: string) {
@@ -160,7 +172,7 @@ export function AdminDashboard() {
       }
     });
 
-    return Array.from(uniqueCustomers.values());
+    return Array.from(uniqueCustomers.values()).sort((a, b) => b.totalSpend - a.totalSpend);
   }, [bookingList, serviceList]);
 
   const filteredBookings = useMemo(() => {
@@ -212,15 +224,63 @@ export function AdminDashboard() {
     setSaveMessage("Demo reset to seed data");
   }
 
+  function renderStatCards() {
+    const statCards = [
+      { label: "Today", value: todayBookings.toString(), helper: "Bookings scheduled today" },
+      { label: "Pending", value: pendingBookings.toString(), helper: "Needs owner action" },
+      { label: "Revenue", value: `₱${estimatedRevenue.toLocaleString()}`, helper: "Estimated income" },
+      { label: "Avg. ticket", value: `₱${averageTicket.toLocaleString()}`, helper: `${bookedHours.toFixed(1)} booked hours` },
+    ];
+
+    return (
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((card) => (
+          <div key={card.label} className="rounded-[1.75rem] border border-rosewood/10 bg-white/82 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-soft">
+            <p className="text-sm font-bold text-espresso/55">{card.label}</p>
+            <p className="mt-3 text-4xl font-black tracking-tight">{card.value}</p>
+            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-rosewood/60">{card.helper}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderAdminHeader() {
+    return (
+      <div className={`${panelClass} overflow-hidden`}>
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.24em] text-rosewood/70">Owner dashboard</p>
+            <h2 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">Welcome back, {shopName}</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-espresso/62">
+              Manage appointment requests, daily schedules, services, staff, customers, reports, and business settings from one clean demo workspace.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={() => setActiveTab("Bookings")} className={primaryButton}>Add booking</button>
+            <button type="button" onClick={() => setActiveTab("Reports")} className={secondaryButton}>View reports</button>
+            <button type="button" onClick={() => setActiveTab("Services")} className={secondaryButton}>Manage services</button>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-3 rounded-[1.5rem] bg-cream p-4 text-sm font-bold text-espresso/65 md:grid-cols-3">
+          <p><span className="text-rosewood">Status:</span> {saveMessage}</p>
+          <p><span className="text-rosewood">Data:</span> Browser demo storage</p>
+          <p><span className="text-rosewood">Mode:</span> Mock admin, no database yet</p>
+        </div>
+      </div>
+    );
+  }
+
   function renderBookingForm() {
     return (
-      <form onSubmit={addManualBooking} className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
+      <form onSubmit={addManualBooking} className={panelClass}>
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h3 className="text-2xl font-black">Add booking manually</h3>
-            <p className="mt-2 text-sm text-espresso/60">For walk-ins, phone calls, Messenger, or test bookings.</p>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Quick create</p>
+            <h3 className="mt-2 text-2xl font-black">Add booking manually</h3>
+            <p className="mt-2 text-sm text-espresso/60">For walk-ins, phone calls, Messenger bookings, or test appointments.</p>
           </div>
-          <span className="rounded-full bg-blush/60 px-4 py-2 text-sm font-black text-rosewood">Auto-saved</span>
+          <span className="w-fit rounded-full bg-blush/60 px-4 py-2 text-sm font-black text-rosewood">Auto-saved</span>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Customer name" className="input-field" />
@@ -234,24 +294,25 @@ export function AdminDashboard() {
           </select>
           <input type="time" value={bookingTime} onChange={(event) => setBookingTime(event.target.value)} className="input-field" />
         </div>
-        <button className="mt-5 rounded-full bg-rosewood px-6 py-3 font-black text-white transition hover:-translate-y-0.5 hover:bg-espresso">Add booking</button>
+        <button className={`mt-5 ${primaryButton}`}>Add booking</button>
       </form>
     );
   }
 
   function renderBookingsTable() {
     return (
-      <div className="overflow-hidden rounded-[2rem] border border-rosewood/10 bg-white/80 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-rosewood/10 p-6">
+      <div className="overflow-hidden rounded-[2rem] border border-rosewood/10 bg-white/82 shadow-sm">
+        <div className="flex flex-col gap-5 border-b border-rosewood/10 p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="text-2xl font-black">Bookings management</h3>
-              <p className="mt-2 text-sm text-espresso/60">Confirm, complete, cancel, search, filter, or mark no-show. This demo now persists in your browser.</p>
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Appointment manager</p>
+              <h3 className="mt-2 text-2xl font-black">Bookings management</h3>
+              <p className="mt-2 text-sm text-espresso/60">Confirm, complete, cancel, search, filter, or mark no-show. Changes persist in this browser.</p>
             </div>
-            <button type="button" onClick={() => setBookingList(seedBookings)} className="rounded-full border border-rosewood/20 px-5 py-3 text-sm font-black text-rosewood transition hover:-translate-y-0.5 hover:bg-rosewood hover:text-white">Reset bookings</button>
+            <button type="button" onClick={() => setBookingList(seedBookings)} className={secondaryButton}>Reset bookings</button>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="grid gap-3 xl:grid-cols-[1fr_auto] xl:items-center">
             <input value={bookingSearch} onChange={(event) => setBookingSearch(event.target.value)} placeholder="Search customer, phone, service, stylist, date..." className="input-field" />
             <div className="flex flex-wrap gap-2">
               {statusFilters.map((status) => (
@@ -306,72 +367,54 @@ export function AdminDashboard() {
 
   function renderDashboard() {
     return (
-      <div className="space-y-6">
-        <div className="rounded-[2rem] border border-rosewood/10 bg-white/70 p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.28em] text-rosewood/70">Owner command center</p>
-              <h2 className="mt-3 text-4xl font-black">Real-deal admin demo</h2>
-              <p className="mt-3 max-w-3xl leading-7 text-espresso/65">Protected by a mock owner PIN, with bookings, analytics, reports, services, staff, customers, settings, and browser-saved demo data.</p>
-            </div>
-            <div className="rounded-[1.5rem] bg-cream p-4 text-sm font-bold text-espresso/65">
-              <p className="text-rosewood">{saveMessage}</p>
-              <p className="mt-1">Changes persist on this device until reset.</p>
-            </div>
-          </div>
-        </div>
+      <div className="space-y-8">
+        {renderAdminHeader()}
+        {renderStatCards()}
 
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            ["Today", todayBookings.toString(), "Bookings scheduled today"],
-            ["Pending", pendingBookings.toString(), "Needs owner action"],
-            ["Revenue", `₱${estimatedRevenue.toLocaleString()}`, "Estimated income"],
-            ["Avg. ticket", `₱${averageTicket.toLocaleString()}`, `${bookedHours.toFixed(1)} booked hours`],
-          ].map(([label, value, helper]) => (
-            <div key={label} className="rounded-[1.5rem] border border-rosewood/10 bg-white/75 p-5 transition hover:-translate-y-1 hover:shadow-soft"><p className="text-sm font-bold text-espresso/55">{label}</p><p className="mt-2 text-3xl font-black">{value}</p><p className="mt-2 text-xs font-bold uppercase tracking-wide text-rosewood/60">{helper}</p></div>
-          ))}
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
+        <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
+          <div className={panelClass}>
+            <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-black">Pending queue</h3>
-                <p className="mt-2 text-sm text-espresso/60">Quick confirm requests that need attention.</p>
+                <p className="mt-2 text-sm text-espresso/60">Requests waiting for confirmation.</p>
               </div>
-              <button type="button" onClick={() => setActiveTab("Bookings")} className="rounded-full bg-rosewood px-4 py-2 text-sm font-black text-white">View all</button>
+              <button type="button" onClick={() => setActiveTab("Bookings")} className={secondaryButton}>View all</button>
             </div>
             <div className="mt-6 space-y-3">
               {pendingQueue.map((booking) => (
-                <div key={booking.id} className="rounded-2xl bg-cream p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div key={booking.id} className="rounded-2xl bg-cream p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="font-black">{booking.customerName}</p>
-                      <p className="text-sm text-espresso/60">{getServiceName(booking.serviceId)} · {booking.date} {booking.startTime}</p>
+                      <p className="text-lg font-black">{booking.customerName}</p>
+                      <p className="mt-1 text-sm text-espresso/60">{getServiceName(booking.serviceId)} · {booking.date} · {booking.startTime}</p>
+                      <p className="mt-1 text-xs font-bold uppercase tracking-wide text-rosewood/60">Stylist: {getStaffName(booking.staffId)}</p>
                     </div>
-                    <button type="button" onClick={() => updateBookingStatus(booking.id, "confirmed")} className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-700">Confirm</button>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => updateBookingStatus(booking.id, "confirmed")} className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5">Confirm</button>
+                      <button type="button" onClick={() => updateBookingStatus(booking.id, "cancelled")} className="rounded-full bg-zinc-200 px-4 py-2 text-sm font-black text-zinc-700 transition hover:-translate-y-0.5">Cancel</button>
+                    </div>
                   </div>
                 </div>
               ))}
-              {!pendingQueue.length ? <p className="rounded-2xl bg-cream p-4 text-sm font-bold text-espresso/60">No pending bookings right now.</p> : null}
+              {!pendingQueue.length ? <p className="rounded-2xl bg-cream p-5 text-sm font-bold text-espresso/60">No pending bookings right now.</p> : null}
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
+          <div className={panelClass}>
             <h3 className="text-2xl font-black">Today&apos;s schedule</h3>
             <p className="mt-2 text-sm text-espresso/60">A quick look at appointments scheduled for today.</p>
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-4">
               {todaysSchedule.map((booking) => (
-                <div key={booking.id} className="grid gap-3 rounded-2xl bg-cream p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                  <span className="rounded-full bg-white px-3 py-2 text-sm font-black text-rosewood">{booking.startTime}</span>
+                <div key={booking.id} className="grid gap-4 rounded-2xl bg-cream p-5 md:grid-cols-[90px_1fr_auto] md:items-center">
+                  <div className="rounded-full bg-white px-4 py-2 text-center text-sm font-black text-rosewood">{booking.startTime}</div>
                   <div>
-                    <p className="font-black">{getServiceName(booking.serviceId)}</p>
-                    <p className="text-sm text-espresso/60">{booking.customerName} · {getStaffName(booking.staffId)}</p>
+                    <p className="text-lg font-black">{getServiceName(booking.serviceId)}</p>
+                    <p className="mt-1 text-sm text-espresso/60">{booking.customerName} · {getStaffName(booking.staffId)}</p>
                   </div>
                   <StatusBadge status={booking.status} />
                 </div>
               ))}
-              {!todaysSchedule.length ? <p className="rounded-2xl bg-cream p-4 text-sm font-bold text-espresso/60">No bookings today.</p> : null}
+              {!todaysSchedule.length ? <p className="rounded-2xl bg-cream p-5 text-sm font-bold text-espresso/60">No bookings today.</p> : null}
             </div>
           </div>
         </div>
@@ -385,22 +428,28 @@ export function AdminDashboard() {
     const selectedDateBookings = bookingList.filter((booking) => booking.date === calendarDate);
 
     return (
-      <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
+      <div className={panelClass}>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-2xl font-black">Daily stylist schedule</h3>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Schedule board</p>
+            <h3 className="mt-2 text-2xl font-black">Daily stylist schedule</h3>
             <p className="mt-2 text-sm text-espresso/60">Calendar-style view grouped by staff for a selected date.</p>
           </div>
           <input type="date" value={calendarDate} onChange={(event) => setCalendarDate(event.target.value)} className="input-field max-w-xs" />
         </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 xl:grid-cols-3">
           {staffList.map((staff) => {
             const staffBookings = selectedDateBookings.filter((booking) => booking.staffId === staff.id).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
             return (
               <div key={staff.id} className="rounded-[1.5rem] bg-cream p-5">
-                <p className="font-black">{staff.name}</p>
-                <p className="mt-1 text-sm text-rosewood">{staff.role}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-black">{staff.name}</p>
+                    <p className="mt-1 text-sm text-rosewood">{staff.role}</p>
+                  </div>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-rosewood">{staffBookings.length} slots</span>
+                </div>
                 <div className="mt-5 space-y-3">
                   {staffBookings.map((booking) => (
                     <div key={booking.id} className="rounded-2xl bg-white/80 p-4 text-sm"><p className="font-black">{booking.startTime} · {getServiceName(booking.serviceId)}</p><p className="mt-1 text-espresso/60">{booking.customerName}</p><div className="mt-3"><StatusBadge status={booking.status} /></div></div>
@@ -417,25 +466,26 @@ export function AdminDashboard() {
 
   function renderCustomers() {
     return (
-      <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
+      <div className={panelClass}>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-2xl font-black">Customers</h3>
-            <p className="mt-2 text-sm text-espresso/60">Auto-generated customer list from booking records.</p>
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Client list</p>
+            <h3 className="mt-2 text-2xl font-black">Customers</h3>
+            <p className="mt-2 text-sm text-espresso/60">Auto-generated customer records from booking history.</p>
           </div>
-          <span className="rounded-full bg-blush/60 px-4 py-2 text-sm font-black text-rosewood">{customers.length} customers</span>
+          <span className="w-fit rounded-full bg-blush/60 px-4 py-2 text-sm font-black text-rosewood">{customers.length} customers</span>
         </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 xl:grid-cols-2">
           {customers.map((customer) => (
             <div key={customer.latest.customerPhone} className="rounded-[1.5rem] bg-cream p-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-black">{customer.latest.customerName}</p>
+                  <p className="text-lg font-black">{customer.latest.customerName}</p>
                   <p className="mt-1 text-sm text-espresso/60">{customer.latest.customerPhone}</p>
                 </div>
                 <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-rosewood">{customer.bookings.length} visits</span>
               </div>
-              <p className="mt-4 text-sm font-bold text-rosewood">Latest: {getServiceName(customer.latest.serviceId)}</p>
+              <p className="mt-4 text-sm font-bold text-rosewood">Latest service: {getServiceName(customer.latest.serviceId)}</p>
               <p className="mt-1 text-sm text-espresso/60">Total estimated spend: ₱{customer.totalSpend.toLocaleString()}</p>
             </div>
           ))}
@@ -447,15 +497,16 @@ export function AdminDashboard() {
   function renderSettings() {
     return (
       <div className="space-y-6">
-        <div className="rounded-[2rem] border border-rosewood/10 bg-white/80 p-6 shadow-sm">
-          <h3 className="text-2xl font-black">Business settings</h3>
-          <p className="mt-2 text-sm text-espresso/60">Editable fields for demo. These now persist in browser localStorage.</p>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className={panelClass}>
+          <p className="text-sm font-black uppercase tracking-[0.22em] text-rosewood/70">Business profile</p>
+          <h3 className="mt-2 text-2xl font-black">Business settings</h3>
+          <p className="mt-2 text-sm text-espresso/60">Editable demo fields. These save to browser localStorage until reset.</p>
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
             <label className="font-black">Shop name<input value={shopName} onChange={(event) => setShopName(event.target.value)} className="input-field mt-3 font-normal" /></label>
             <label className="font-black">Phone<input value={shopPhone} onChange={(event) => setShopPhone(event.target.value)} className="input-field mt-3 font-normal" /></label>
             <label className="font-black">Opening hours<input value={shopHours} onChange={(event) => setShopHours(event.target.value)} className="input-field mt-3 font-normal" /></label>
           </div>
-          <div className="mt-6 rounded-[1.5rem] bg-rosewood p-5 text-white"><p className="text-sm font-bold uppercase tracking-[0.22em] text-champagne">Live preview</p><h4 className="mt-2 text-2xl font-black">{shopName}</h4><p className="mt-2 text-white/75">{shopPhone} · {shopHours}</p></div>
+          <div className="mt-6 rounded-[1.5rem] bg-rosewood p-6 text-white"><p className="text-sm font-bold uppercase tracking-[0.22em] text-champagne">Live preview</p><h4 className="mt-2 text-3xl font-black">{shopName}</h4><p className="mt-2 text-white/75">{shopPhone} · {shopHours}</p></div>
         </div>
 
         <div className="rounded-[2rem] border border-red-100 bg-red-50 p-6 shadow-sm">
@@ -467,20 +518,44 @@ export function AdminDashboard() {
     );
   }
 
+  const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
+
   return (
-    <section className="py-12 md:py-16">
-      <div className="salon-container">
-        <div className="grid gap-6 lg:grid-cols-[270px_1fr]">
-          <aside className="h-fit rounded-[2rem] bg-espresso p-5 text-white lg:sticky lg:top-28">
+    <section className="py-10 md:py-14">
+      <div className="salon-container max-w-[1500px]">
+        <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.26em] text-rosewood/70">Admin workspace</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">{currentTab.label}</h1>
+          </div>
+          <p className="max-w-xl text-sm leading-6 text-espresso/60">Mock owner portal for pitching salon clients. Data saves in this browser while the real database is not connected yet.</p>
+        </div>
+
+        <div className="grid gap-8 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="h-fit rounded-[2rem] bg-espresso p-5 text-white shadow-[0_25px_90px_rgba(42,23,20,0.22)] xl:sticky xl:top-28">
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-champagne">Owner panel</p>
-            <h1 className="mt-3 text-3xl font-black">{shopName}</h1>
+            <h2 className="mt-3 text-3xl font-black leading-tight">{shopName}</h2>
             <p className="mt-2 text-sm text-white/55">{saveMessage}</p>
-            <div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs md:grid-cols-3 lg:grid-cols-1 lg:text-left"><div className="rounded-2xl bg-white/10 p-3"><b>{pendingBookings}</b> pending</div><div className="rounded-2xl bg-white/10 p-3"><b>{confirmedBookings}</b> confirmed</div><div className="rounded-2xl bg-white/10 p-3"><b>{activeServices}</b> active services</div></div>
-            <nav className="mt-8 space-y-2 text-sm font-bold text-white/70">{tabs.map((item) => <button key={item} type="button" onClick={() => setActiveTab(item)} className={`w-full rounded-2xl px-4 py-3 text-left transition hover:bg-white/10 ${activeTab === item ? "bg-white text-rosewood shadow-soft" : ""}`}>{item}</button>)}</nav>
+
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="rounded-2xl bg-white/10 px-4 py-3"><b>{pendingBookings}</b> pending requests</div>
+              <div className="rounded-2xl bg-white/10 px-4 py-3"><b>{confirmedBookings}</b> confirmed bookings</div>
+              <div className="rounded-2xl bg-white/10 px-4 py-3"><b>{activeServices}</b> active services</div>
+            </div>
+
+            <nav className="mt-8 space-y-2 text-sm font-bold">
+              {tabs.map((item) => (
+                <button key={item.id} type="button" onClick={() => setActiveTab(item.id)} className={`group flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left transition ${activeTab === item.id ? "bg-white text-rosewood shadow-soft" : "text-white/70 hover:bg-white/10 hover:text-white"}`}>
+                  <span>{item.label}</span>
+                  <span className={`text-[10px] uppercase tracking-wide ${activeTab === item.id ? "text-rosewood/55" : "text-white/35 group-hover:text-white/55"}`}>{item.helper}</span>
+                </button>
+              ))}
+            </nav>
           </aside>
-          <div className="space-y-6">
+
+          <div className="min-w-0 space-y-8">
             {activeTab === "Dashboard" ? renderDashboard() : null}
-            {activeTab === "Bookings" ? <div className="space-y-6">{renderBookingForm()}{renderBookingsTable()}</div> : null}
+            {activeTab === "Bookings" ? <div className="space-y-8">{renderBookingForm()}{renderBookingsTable()}</div> : null}
             {activeTab === "Calendar" ? renderCalendar() : null}
             {activeTab === "Services" ? <AdminServicesPanel services={serviceList} setServices={setServiceList} /> : null}
             {activeTab === "Staff" ? <AdminStaffPanel staff={staffList} services={serviceList} setStaff={setStaffList} /> : null}
